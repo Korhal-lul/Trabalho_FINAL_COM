@@ -5,7 +5,7 @@
 - [📄 Descrição](#-descrição)  
 - [⚙️ Funcionamento](#️-funcionamento)  
 - [🧩 Estrutura do Projeto](#-estrutura-do-projeto)  
-- [▶️ Como Compilar e Executar](#️-como-compilar-e-executar)  
+- [▶️ Como Compilar e Executar](#️-como-compilar)  
 ---
 
 ## 📄 Descrição  
@@ -27,8 +27,9 @@ Geração de Código JVM – emite bytecode através de arquivos .j para o Jasmi
 
 O resultado final é um arquivo .class executável na JVM.
 
-## [🧩 Estrutura do Projeto](#-estrutura-do-projeto)  
+##  🧩 Estrutura do Projeto
 /src
+
  ├── Lex.x        # Lexer (Alex)
  
  ├── Parser.y     # Parser (Happy)
