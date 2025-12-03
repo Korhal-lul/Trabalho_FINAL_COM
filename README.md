@@ -30,18 +30,29 @@ O resultado final é um arquivo .class executável na JVM.
 ## [🧩 Estrutura do Projeto](#-estrutura-do-projeto)  
 /src
  ├── Lex.x        # Lexer (Alex)
+ 
  ├── Parser.y     # Parser (Happy)
+ 
  ├── Token.hs     # Definição dos tokens
+ 
  ├── DataTree.hs  # AST
+ 
  ├── Semantic.hs  # Analisador semântico
+ 
  ├── JVM.hs       # Geração de bytecode Jasmin
+ 
  ├── teste.j--_   # Codigo exemplo de entrada
+ 
  └── main.hs      # Pipeline do compilador
 
 ## ▶️ Como compilar
 
 alex Lex.x
+
 happy Parser.y
+
 ghc -o main main.hs
+
 ./main teste.j--_
+
 java -jar PATH_TO_jasmin.jar output.j
