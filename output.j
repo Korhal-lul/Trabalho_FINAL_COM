@@ -8,38 +8,31 @@
 .end method
 
 .method public static main([Ljava/lang/String;)V
-	.limit stack 10
-	.limit locals 10
+	.limit stack 20
+	.limit locals 4
 
+	ldc 1
+	newarray int
+	astore 1
+	aload 1
+	iconst_0
 	iconst_2
-	iconst_3
+	iastore
+	iconst_2
 	i2d
-	swap
+	iconst_3
 	i2d
 	invokestatic java/lang/Math/pow(DD)D
 	d2i
-	istore 0
+	istore 3
 	iconst_0
-	istore 0
-	iconst_0
-	istore 0
-l0:
-	iload 0
-	iconst_5
-	if_icmplt l1
-	goto l2
-l1:
+	istore 2
 	getstatic java/lang/System/out Ljava/io/PrintStream;
-	iload 0
-	iconst_2
+	ldc 11
+	aload 1
+	iconst_0
+	iaload
 	irem
-	swap
 	invokevirtual java/io/PrintStream/print(I)V
-	iload 0
-	iconst_1
-	iadd
-	istore 0
-	goto l0
-l2:
 	return
 .end method

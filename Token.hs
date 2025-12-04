@@ -13,6 +13,8 @@ data Token
   | T_NOT
   | T_MOD
   | T_EXP
+  | T_LBRACKET
+  | T_RBRACKET
   | T_EQUAL 
   | T_GREATERE 
   | T_LESSE 

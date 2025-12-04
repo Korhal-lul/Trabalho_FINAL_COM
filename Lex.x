@@ -29,6 +29,8 @@ tokens :-
 <0> "!"     {\s -> T_NOT}
 <0> "%"     {\s -> T_MOD}
 <0> "**"    {\s -> T_EXP}
+<0> "["     {\s -> T_LBRACKET}
+<0> "]"     {\s -> T_RBRACKET}
 <0> "="     {\s -> T_ATRIB}
 <0> "=="    {\s -> T_EQUAL}
 <0> ">="    {\s -> T_GREATERE}

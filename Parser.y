@@ -23,6 +23,8 @@ import DataTree
   '!' {T_NOT}
   '%' {T_MOD}
   '**' {T_EXP}
+  '[' {T_LBRACKET}
+  ']' {T_RBRACKET}
   '==' {T_EQUAL} 
   '>=' {T_GREATERE} 
   '>' {T_GREATER} 
@@ -67,7 +69,8 @@ TipoRetorno: Tipo {$1}
 DeclParametros: DeclParametros ',' Parametro {$1 ++ [$3]}
         | Parametro {[$1]}
 
-Parametro : Tipo Id {$2:#:($1, 0)}
+Parametro : Tipo Id {$2:#:($1, 0)} 
+        | Tipo Id '[' Int ']' { $2 :#: (T_Arr $1 $4, 0) }
 
 BlocoPrincipal: '{'Declaracoes ListaCmd'}' {($2, $3)}
         | '{' ListaCmd '}' {([], $2)}
@@ -75,7 +78,8 @@ BlocoPrincipal: '{'Declaracoes ListaCmd'}' {($2, $3)}
 Declaracoes: Declaracoes Declaracao {$1++$2}
         | Declaracao {$1}
 
-Declaracao: Tipo ListaId ';' {map (\x -> x:#: ($1,0)) $2}
+Declaracao: Tipo ListaId ';'      { map (\x -> x :#: ($1, 0)) $2 }
+        | Tipo Id '[' Int ']' ';' { [ $2 :#: (T_Arr $1 $4, 0) ] }
 
 Tipo : 'int' {T_Int}
     | 'double' {T_Double}
@@ -109,6 +113,8 @@ AtribFor: Id '=' ExpressaoAritmetica       {Atrib $1 $3}
 
 CmdAtrib: Id '=' ExpressaoAritmetica ';'         {Atrib $1 $3}
         | Id '=' Literal ';'                     {Atrib $1 (Lit $3)}
+        | Id '[' ExpressaoAritmetica ']' '=' ExpressaoAritmetica ';' { ArrAssign $1 $3 $6 }
+        | Id '[' ExpressaoAritmetica ']' '=' Literal ';' { ArrAssign $1 $3 (Lit $6) }
 
 
 CmdEscrita: 'print' '(' ExpressaoAritmetica ')' ';'     {Imp $3} 
@@ -166,6 +172,7 @@ Factor : Int                               {Const (CInt $1)}
        | Id                                {IdVar $1}
        | ChamadaFuncao                     {Chamada (fst $1) (snd $1)}
        | '(' ExpressaoAritmetica ')'       {$2}      
+       | Id '[' ExpressaoAritmetica ']'    { ArrAccess $1 $3 }
 
 {
 parseError :: [Token] -> a

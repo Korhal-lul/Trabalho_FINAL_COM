@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- Semantic.hs
+-- Checagem semântica (atualizado para suportar arrays: ArrAccess e ArrAssign)
 module Semantic where
 
 import DataTree
@@ -12,7 +14,6 @@ import Control.Monad (zipWithM, foldM, unless)
 import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
 import DataTree (ExprL)
-
 
 type Env = Map.Map Id Tipo
 type EnvFun = Map.Map Id ([Var], Tipo)
@@ -30,30 +31,37 @@ coercao op envFun env e1 e2 t1 t2
                              ", com tipos " ++ show t1 ++ " e " ++ show t2
 
 tExpr :: EnvFun -> Env -> Expr -> Analisador (Tipo, Expr)
-tExpr envFun env (Const (CInt i)) = return (T_Int, Const (CInt i)) -- você pode retornar o valor original se quiser
+tExpr envFun env (Const (CInt i)) = return (T_Int, Const (CInt i))
 tExpr envFun env (Const (CDouble d)) = return (T_Double, Const (CDouble d))
 tExpr _ _ (Lit s) = return (T_Str, Lit s)
+
 tExpr envFun env (IdVar x) = case Map.lookup x env of
     Just t -> return (t, IdVar x)
     Nothing -> throwError $ "Variavel nao declarada: " ++ x
+
 tExpr envFun env (Add e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
     coercao Add envFun env e1' e2' t1 t2
+
 tExpr envFun env (Sub e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
     coercao Sub envFun env e1' e2' t1 t2
+
 tExpr envFun env (Mul e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
     coercao Mul envFun env e1' e2' t1 t2
+
 tExpr envFun env (Div e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
     coercao Div envFun env e1' e2' t1 t2
+
 tExpr envFun env (IntDouble e) = return (T_Double, IntDouble e)
 tExpr envFun env (DoubleInt e) = return (T_Int, DoubleInt e)
+
 tExpr envFun env (Mod e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
@@ -63,10 +71,12 @@ tExpr envFun env (Mod e1 e2) = do
       (T_Double, T_Int)    -> throwError $ "Operador % nao definido entre Double e Int."
       (T_Double, T_Double) -> throwError $ "Operador % nao definido para Double."
       _ -> throwError $ "Erro de tipos no operador %: tipos " ++ show t1 ++ " e " ++ show t2
+
 tExpr envFun env (Exp e1 e2) = do
     (t1, e1') <- tExpr envFun env e1
     (t2, e2') <- tExpr envFun env e2
     coercao Exp envFun env e1' e2' t1 t2
+
 tExpr envFun env (Chamada nome args) = do
   case Map.lookup nome envFun of
     Nothing -> throwError $ "Funcao nao declarada: " ++ nome
@@ -79,6 +89,22 @@ tExpr envFun env (Chamada nome args) = do
           args' <- zipWithM (verificaParam envFun env) params args
           return (tipoRet, Chamada nome args')
 
+-- >>> NOVO: tratar acesso a arrays ArrAccess
+tExpr envFun env (ArrAccess nome idx) = case Map.lookup nome env of
+  Nothing -> throwError $ "Variavel nao declarada: " ++ nome
+  Just tvar -> case tvar of
+    T_Arr elemType tamanho -> do
+      (tIdx, idx') <- tExpr envFun env idx
+      unless (tIdx == T_Int) $
+        throwError $ "Indice de array deve ser int em " ++ nome
+      -- checagem de limites em tempo de compilacao se indice constante
+      case idx' of
+        Const (CInt n) ->
+          if n < 0 || n >= tamanho
+            then throwError $ "Indice fora de limites no acesso a " ++ nome ++ ": " ++ show n
+            else return (elemType, ArrAccess nome idx')
+        _ -> return (elemType, ArrAccess nome idx')
+    _ -> throwError $ "Variavel " ++ nome ++ " nao eh array (tipo: " ++ show tvar ++ ")"
 
 tExprR :: EnvFun -> Env -> ExprR -> Analisador (ExprR)
 tExprR envFun env (Req e1 e2)  = tRel envFun env Req e1 e2
@@ -134,18 +160,18 @@ verificaParam envFun env (nome :#: (tParam, _)) expr = do
 tCmd :: Tipo -> EnvFun -> Env -> Comando -> Analisador Comando
 
 tCmd tipoRet envFun env (Atrib x e) = do
-  (tExpr, e') <- tExpr envFun env e
+  (tExprT, e') <- tExpr envFun env e
   case Map.lookup x env of
     Nothing -> throwError $ "Variavel nao declarada: " ++ x
     Just tVar
-      | tVar == tExpr -> return (Atrib x e')
-      | tVar == T_Double && tExpr == T_Int -> return (Atrib x (IntDouble e'))
-      | tVar == T_Int && tExpr == T_Double -> do
+      | tVar == tExprT -> return (Atrib x e')
+      | tVar == T_Double && tExprT == T_Int -> return (Atrib x (IntDouble e'))
+      | tVar == T_Int && tExprT == T_Double -> do
           tell ["Advertancia: atribuicao double em variavel int"]
           return (Atrib x (DoubleInt e'))
       | otherwise -> throwError $ "Atribuicao incompativel: " ++ x ++
                                   " do tipo " ++ show tVar ++
-                                  " com expressao do tipo " ++ show tExpr
+                                  " com expressao do tipo " ++ show tExprT
 
 tCmd tipoRet envFun env (For init cond inc bloco) = do
   init' <- tCmd tipoRet envFun env init
@@ -198,6 +224,33 @@ tCmd tipoRet envFun env (Proc nome args) = do
           return (Proc nome args')
     Just (_, tipoRetFunc) ->
       throwError $ "Procedimento " ++ nome ++ " retorna valor (" ++ show tipoRetFunc ++ ") mas foi usado como comando."
+
+-- >>> NOVO: tratar atribuicao a arrays ArrAssign
+tCmd tipoRet envFun env (ArrAssign nome idx expr) = case Map.lookup nome env of
+  Nothing -> throwError $ "Variavel nao declarada: " ++ nome
+  Just tvar -> case tvar of
+    T_Arr elemType tamanho -> do
+      (tIdx, idx') <- tExpr envFun env idx
+      unless (tIdx == T_Int) $
+        throwError $ "Indice de array deve ser int em " ++ nome
+      -- checagem de limites em tempo de compilacao se indice constante
+      case idx' of
+        Const (CInt n) ->
+          when (n < 0 || n >= tamanho) $
+            throwError $ "Indice fora de limites na atribuicao a " ++ nome ++ ": " ++ show n
+        _ -> return ()
+      (tExprT, expr') <- tExpr envFun env expr
+      case (elemType, tExprT) of
+        _ | elemType == tExprT -> return (ArrAssign nome idx' expr')
+        (T_Double, T_Int) -> return (ArrAssign nome idx' (IntDouble expr'))
+        (T_Int, T_Double) -> do
+          tell ["Advertancia: atribuicao double em array int " ++ nome]
+          return (ArrAssign nome idx' (DoubleInt expr'))
+        _ -> throwError $ "Atribuicao incompativel em array " ++ nome ++
+                          ": elemento de tipo " ++ show elemType ++
+                          " com expressao do tipo " ++ show tExprT
+    _ -> throwError $ "Variavel " ++ nome ++ " nao eh array (tipo: " ++ show tvar ++ ")"
+
 
 verificaDuplicatasVars :: [Var] -> Analisador ()
 verificaDuplicatasVars vars = do

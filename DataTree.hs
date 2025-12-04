@@ -2,13 +2,13 @@ module DataTree where
 
 type Id =  String 
 
-data Tipo = T_Double | T_Int | T_Str | T_Void deriving (Show, Eq)
+data Tipo = T_Double | T_Int | T_Str | T_Arr Tipo Int | T_Void deriving (Show, Eq)
 
 data TCons = CDouble Double | CInt Int deriving Show
 
 data Entrada = EArit Expr | ERel ExprR | ELog ExprL | ECmd Comando | EBloco Bloco deriving Show
 
-data Expr = Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr | Mod Expr Expr | Exp Expr Expr | Neg Expr | Const TCons | IdVar String | Chamada Id [Expr] | Lit String | IntDouble Expr | DoubleInt Expr deriving Show
+data Expr = Add Expr Expr | Sub Expr Expr | Mul Expr Expr | Div Expr Expr | Mod Expr Expr | Exp Expr Expr | ArrAccess Id Expr| Neg Expr | Const TCons | IdVar String | Chamada Id [Expr] | Lit String | IntDouble Expr | DoubleInt Expr deriving Show
 
 data ExprR = Req Expr Expr | Rdif Expr Expr | Rlt Expr Expr | Rgt Expr Expr | Rle Expr Expr | Rge Expr Expr deriving Show
 
@@ -26,6 +26,7 @@ data Comando =
     If ExprL Bloco Bloco
     | While ExprL Bloco
     | Atrib Id Expr
+    | ArrAssign Id Expr Expr
     | Leitura Id 
     | Imp Expr
     | For Comando ExprL Comando Bloco
