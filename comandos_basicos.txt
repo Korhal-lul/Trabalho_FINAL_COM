@@ -1,0 +1,108 @@
+- COMO RODAR -
+
+alex Lex.x
+happy Parser.y
+ghc -o main main.hs
+./main teste.j--_
+java -jar PATH_TO_jasmin.jar output.j
+
+- Como fazer alteracoes - 
+1) Lex.x: 
+adicionar token literal (ex.: % → T_MOD);
+
+ajustar regexes (@id, @literal) se necessário.
+
+2) Token.hs:
+
+Acrescente o construtor no data Token (ex.: T_MOD)
+
+3) Parser.y:
+
+adicionar %token correspondente (ou as entradas token -> token ctor).
+
+inserir a nova produção ou estender produção existente (respeitar precedência; geralmente Term para * / %).
+
+construir o nó AST correto (use um construtor já existente ou crie um novo, por exemplo Mod a b).
+
+Se aparecerem shift/reduce ou reduce/reduce, ajuste precedência com %left/%right ou reestruture gramática.
+
+4) Atualizar AST (DataTree.hs):
+
+Adicione novo construtor no data Expr (ex.: Mod Expr Expr).
+
+Rode ghc -c DataTree.hs para checar.
+
+5) Semantic.hs:
+adicione cláusula tExpr (ou função equivalente) para validar e retornar tipo/AST transformado.
+
+decidir coerções (por ex: permitir int↔double? para % normalmente NÃO).
+
+adicionar mensagens de erro/advertência com throwError/tell.
+
+Ex.:
+Decidimos: % só para inteiros. Então, Mod e1 e2 exige T_Int em ambos e produz T_Int. Se quiser coercion (int↔double) para % no futuro, podemos discutir, mas % em FP costuma ser definido para inteiros.
+
+Adicione uma cláusula tExpr para Mod:
+
+Procure as cláusulas tExpr ... (Mul e1 e2) e parecidas. Depois dessas, adicione:
+tExpr envFun env (Mod e1 e2) = do
+    (t1, e1') <- tExpr envFun env e1
+    (t2, e2') <- tExpr envFun env e2
+    case (t1, t2) of
+      (T_Int, T_Int) -> return (T_Int, Mod e1' e2')
+      (T_Int, T_Double)    -> throwError $ "Operador % nao definido entre Int e Double."
+      (T_Double, T_Int)    -> throwError $ "Operador % nao definido entre Double e Int."
+      (T_Double, T_Double) -> throwError $ "Operador % nao definido para Double."
+      _ -> throwError $ "Erro de tipos no operador %: tipos " ++ show t1 ++ " e " ++ show t2
+
+6) JVM.hs:
+
+mapear tipos para instruções Jasmin (ex.: Mod → irem para inteiros).
+
+cuidar ordem da pilha: confirmar que genExpr e1 empilha e depois genExpr e2, então instr irem consome dois ints e empilha resultado.
+
+atualizar genOp/genExpr/genCmd conforme padrão do projeto.
+
+tratar edge-cases (divisão/remainder por zero? lançar exceção?).
+
+Ex.:
+genExpr c tab f (Mod e1 e2) = do
+  (t1, e1') <- genExpr c tab f e1
+  (t2, e2') <- genExpr c tab f e2
+  case (t1, t2) of
+    (T_Int, T_Int) -> return (T_Int, e1' ++ e2' ++ genOp t1 "rem")
+    (T_Double, T_Double) -> return (T_Double, e1' ++ e2' ++ genOp t1 "rem") -- opcional, só se quiser admitir double
+    _ -> error $ "Operador % nao compatível com tipos: " ++ show t1 ++ " e " ++ show t2
+
+
+
+- Mudancas para presentation - 
++ {Mod, exp, Array}
+todas estão nessas linhas em diante
+Tokens.hs -> 14
+Parser.y -> {24, 71, 161}
+Lex.x -> {30}
+DataTree.hs -> {5, 11}
+JVM.hs -> {91}
+Semantic.hs -> 55
+
+
+genExpr c tab f (Mod e1 e2) = do
+  (t1, e1') <- genExpr c tab f e1
+  (t2, e2') <- genExpr c tab f e2
+  case (t1, t2) of
+    (T_Int, T_Int) -> return (T_Int, e1' ++ e2' ++ genOp t1 "rem")
+    (T_Double, T_Double) -> return (T_Double, e1' ++ e2' ++ genOp t1 "rem") -- opcional, só se quiser admitir double
+    _ -> error $ "Operador % nao compatível com tipos: " ++ show t1 ++ " e " ++ show t2
+genExpr c tab f (Exp e1 e2) = do
+  (t1, c1) <- genExpr c tab f e1
+  (t2, c2) <- genExpr c tab f e2
+  let code =
+        c1 ++
+        c2 ++
+        "\ti2d\n\
+        \\tswap\n\
+        \\ti2d\n\
+        \\tinvokestatic java/lang/Math/pow(DD)D\n\
+        \\td2i\n"
+  return (T_Int, code)
