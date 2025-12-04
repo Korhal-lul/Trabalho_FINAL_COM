@@ -1,9 +1,18 @@
+int teste (int n)
 {
-  int a[1];
-  int i;
-  int j;
-  a[0] = 2;
-  j = 2**3;
-  i = 0;
-  print(11 % a[0]);
+   n = n + 1;
+   if(n > 5) 
+   {
+    return 0;
+   }
+   print(n);
+   return teste(n);
+}
+
+{
+  int x, num;
+  double a;
+  x = teste(0);
+  imprimir("teste:", x);
+  return;
 }
