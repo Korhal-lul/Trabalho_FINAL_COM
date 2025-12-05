@@ -43,6 +43,7 @@ A atividade final apresenta sempre duas versões:
 - **Difícil:** adicionar o tipo `float` (para operações aritméticas)
 
 Cada parte do trabalho está separada em uma branch contendo o PDF do enunciado e seu respectivo código.
+A terceira parte *extra* conta com uma implementação adicional de Arrays, MOD(%) e Exponenciação(**).
 
 **Branches:**
 - **Primeira Parte:** `Primeira-Parte`
@@ -64,7 +65,8 @@ Elas são três ao total e ele ajuda a fazer em sala, a entrega de todas vale 20
 
 #### Trabalhos
 
-Não vacile pois vale 50% da nota final. O importante é entregar no prazo, pois ele dá a nota do trabalho baseado na apresentação final, que foi comentada anteriormente, as entregas servem para reduzir a nota da aprensentação, para cada trabalho não entregue ele retira 1 ponto.
+Não vacile pois vale 50% da nota final. O importante é entregar no prazo, pois ele dá a nota do trabalho baseado na apresentação final, que foi comentada anteriormente, as entregas servem para reduzir a nota da aprensentação, para cada trabalho não entregue ele retira 1 ponto. 
+Para a apresentação ele deixa baixar QUALQUER conteúdo e depois pede para tirar o cabo de rede. Recomendo altamente escrever um guia de como fazer alterações e tentar prever a mudança que ele pode pedir e já deixar implementado.
 
 #### Provas
 
